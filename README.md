@@ -64,7 +64,7 @@ LoggingSystem.Instance.Warn($"加载过慢: {stopwatch.ElapsedMilliseconds}ms", 
 ```
 ## **目录结构**
 ```
-**Assets**
+Assets
 └── Tech-Cosmos
     └── LoggingSystem
         ├── Runtime
