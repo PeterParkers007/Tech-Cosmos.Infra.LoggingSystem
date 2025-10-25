@@ -1,0 +1,25 @@
+{
+  "name": "com.tech-cosmos.loggingsystem",
+  "displayName": "LoggingSystem",
+  "version": "1.0.0",
+  "description": "Unity专业日志框架 - 提供分级、结构化、多输出日志能力，告别Debug.Log的混乱调试",
+  "category": "Tools",
+  "keywords": [
+    "logging",
+    "debug",
+    "diagnostics",
+    "analytics",
+    "monitoring",
+    "tool",
+    "utility"
+  ],
+  "author": {
+    "name": "Tech-Cosmos",
+    "email": "3427463164@qq.com",
+    "url": "https://github.com/PeterParkers007/Tech-Cosmos.Infra.LoggingSystem.git"
+  },
+  "license": "MIT",
+  "unity": "2021.3",
+  "unityRelease": "0f1",
+  "dependencies": {}
+}
