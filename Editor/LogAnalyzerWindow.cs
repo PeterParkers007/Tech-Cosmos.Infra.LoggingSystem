@@ -16,7 +16,7 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
         private AnalysisResult result;
         private bool isAnalyzing = false;
 
-        [MenuItem("Tech-Cosmos/Log Analysis Tool")]
+        [MenuItem("Tech-Cosmos/LoggingSystem/Log Analysis Tool")]
         public static void ShowWindow()
         {
             GetWindow<LogAnalyzerWindow>("日志分析工具");

@@ -33,7 +33,7 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
 
         private static LiveLogViewerWindow instance;
 
-        [MenuItem("Tech-Cosmos/实时日志查看器")]
+        [MenuItem("Tech-Cosmos/LoggingSystem/实时日志查看器")]
         public static void ShowWindow()
         {
             instance = GetWindow<LiveLogViewerWindow>("实时日志");

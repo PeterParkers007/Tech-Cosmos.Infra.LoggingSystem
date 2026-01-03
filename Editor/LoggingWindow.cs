@@ -9,7 +9,7 @@ namespace TechCosmos.LoggingSystem.Editor
         private LoggingConfig config;
         private Vector2 scrollPos;
 
-        [MenuItem("Tech-Cosmos/Logging System")]
+        [MenuItem("Tech-Cosmos/LoggingSystem/Logging Window")]
         public static void ShowWindow() => GetWindow<LoggingWindow>("Logging System");
 
         private void OnGUI()
