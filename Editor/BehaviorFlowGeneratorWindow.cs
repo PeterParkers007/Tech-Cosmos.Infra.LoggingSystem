@@ -25,7 +25,7 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
         private bool showTransitions = true;
         private bool showStatistics = true;
 
-        [MenuItem("Tech-Cosmos/LoggingSystem/玩家行为流程图")]
+        [MenuItem("Tech-Cosmos/玩家行为流程图")]
         public static void ShowWindow()
         {
             GetWindow<BehaviorFlowGeneratorWindow>("行为流程图");

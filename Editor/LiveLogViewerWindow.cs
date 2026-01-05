@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEditor;
 using TechCosmos.LoggingSystem.Runtime.Struct;
 using TechCosmos.LoggingSystem.Runtime.Enum;
+using System;
 
 namespace TechCosmos.LoggingSystem.Editor.Tools
 {
@@ -33,7 +34,7 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
 
         private static LiveLogViewerWindow instance;
 
-        [MenuItem("Tech-Cosmos/LoggingSystem/实时日志查看器")]
+        [MenuItem("Tech-Cosmos/日志工具/实时日志查看器")]
         public static void ShowWindow()
         {
             instance = GetWindow<LiveLogViewerWindow>("实时日志");
@@ -42,7 +43,9 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
 
         private void OnEnable()
         {
-            // 订阅日志事件（需要修改LoggingManager以支持事件）
+            // 订阅日志事件
+            TechCosmos.LoggingSystem.Runtime.LoggingManager.OnLogReceived += ReceiveLog;
+
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
 
             if (EditorApplication.isPlaying)
@@ -53,6 +56,9 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
 
         private void OnDisable()
         {
+            // 取消订阅
+            TechCosmos.LoggingSystem.Runtime.LoggingManager.OnLogReceived -= ReceiveLog;
+
             StopReceivingLogs();
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
         }
@@ -72,8 +78,6 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
 
         private void StartReceivingLogs()
         {
-            // 需要扩展LoggingManager以支持实时推送
-            // 这里使用EditorApplication.update作为临时方案
             EditorApplication.update += OnEditorUpdate;
         }
 
@@ -84,7 +88,6 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
 
         private void OnEditorUpdate()
         {
-            // 模拟接收日志（实际应与LoggingManager集成）
             if (Time.realtimeSinceStartup - lastUpdateTime > 0.5f)
             {
                 lastUpdateTime = Time.realtimeSinceStartup;
@@ -92,16 +95,13 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
             }
         }
 
-        // 这个函数需要由LoggingManager调用
-        public static void ReceiveLog(LogEntry entry)
+        // 日志接收回调
+        public void ReceiveLog(TechCosmos.LoggingSystem.Runtime.Struct.LogEntry entry)
         {
-            if (instance != null)
-            {
-                instance.AddLog(entry);
-            }
+            AddLog(entry);
         }
 
-        private void AddLog(LogEntry entry)
+        private void AddLog(TechCosmos.LoggingSystem.Runtime.Struct.LogEntry entry)
         {
             allLogs.Add(entry);
             totalLogsReceived++;
@@ -117,7 +117,6 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
 
             if (autoScroll)
             {
-                // 延迟滚动到底部
                 EditorApplication.delayCall += () => {
                     scrollPos.y = Mathf.Infinity;
                 };
@@ -128,6 +127,7 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
         {
             allLogs.Clear();
             filteredLogs.Clear();
+            categories.Clear();
             totalLogsReceived = 0;
             ApplyFilters();
         }
@@ -174,7 +174,24 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
                 ExportLogs();
             }
 
+            if (GUILayout.Button("测试", EditorStyles.toolbarButton, GUILayout.Width(60)))
+            {
+                SendTestLogs();
+            }
+
             EditorGUILayout.EndHorizontal();
+        }
+
+        private void SendTestLogs()
+        {
+            var manager = TechCosmos.LoggingSystem.Runtime.LoggingManager.Instance;
+            if (manager != null)
+            {
+                manager.Info("测试信息日志", "Test");
+                manager.Warn("测试警告日志", "Test");
+                manager.Error("测试错误日志", "Test");
+                manager.Debug("测试调试日志", "Test");
+            }
         }
 
         private void DrawFilters()
@@ -204,7 +221,7 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
             // 分类过滤
             EditorGUILayout.LabelField("分类:", GUILayout.Width(40));
             string[] categoryOptions = new[] { "All" }.Concat(categories.OrderBy(c => c)).ToArray();
-            int selectedIndex = System.Array.IndexOf(categoryOptions, selectedCategory);
+            int selectedIndex = Array.IndexOf(categoryOptions, selectedCategory);
             int newIndex = EditorGUILayout.Popup(selectedIndex, categoryOptions, GUILayout.Width(150));
             if (newIndex != selectedIndex)
             {
@@ -245,6 +262,10 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
             if (filteredLogs.Count == 0)
             {
                 EditorGUILayout.LabelField("暂无日志", EditorStyles.centeredGreyMiniLabel);
+                if (totalLogsReceived == 0)
+                {
+                    EditorGUILayout.HelpBox("提示：运行游戏后日志将显示在这里\n确保LoggingConfig启用了日志输出", MessageType.Info);
+                }
             }
             else
             {
@@ -257,9 +278,8 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
             EditorGUILayout.EndScrollView();
         }
 
-        private void DrawLogEntry(LogEntry entry, int index)
+        private void DrawLogEntry(TechCosmos.LoggingSystem.Runtime.Struct.LogEntry entry, int index)
         {
-            // 根据日志级别设置颜色
             Color bgColor = GetLogColor(entry.Level);
             bool isEven = index % 2 == 0;
 
@@ -287,7 +307,6 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
 
             logText += entry.Message;
 
-            // 根据级别使用不同的样式
             GUIStyle style = entry.Level >= LogLevel.Error ? EditorStyles.boldLabel : EditorStyles.label;
 
             EditorGUILayout.LabelField(logText, style);
@@ -315,7 +334,7 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
             };
         }
 
-        private void ShowLogDetails(LogEntry entry)
+        private void ShowLogDetails(TechCosmos.LoggingSystem.Runtime.Struct.LogEntry entry)
         {
             GenericMenu menu = new GenericMenu();
 
@@ -327,32 +346,15 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
 分类: {entry.Category}
 场景: {entry.SceneName}
 对象: {entry.ObjectName}
-消息: {entry.Message}
-堆栈: {entry.StackTrace}";
+消息: {entry.Message}";
+
+                if (!string.IsNullOrEmpty(entry.StackTrace))
+                {
+                    fullInfo += $"\n堆栈: {entry.StackTrace}";
+                }
 
                 EditorGUIUtility.systemCopyBuffer = fullInfo;
             });
-
-            menu.AddSeparator("");
-
-            if (!string.IsNullOrEmpty(entry.StackTrace))
-            {
-                menu.AddItem(new GUIContent("跳转到代码"), false, () =>
-                {
-                    // 尝试解析堆栈跟踪，找到第一个用户脚本
-                    string[] lines = entry.StackTrace.Split('\n');
-                    foreach (var line in lines)
-                    {
-                        if (line.Contains("Assets/") && line.Contains(".cs:"))
-                        {
-                            // 提取文件名和行号
-                            // 这里简化处理，实际需要更复杂的解析
-                            Debug.Log($"堆栈跟踪: {line}");
-                            break;
-                        }
-                    }
-                });
-            }
 
             menu.ShowAsContext();
         }
@@ -372,9 +374,9 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
                 // 搜索文本过滤
                 if (!string.IsNullOrEmpty(searchText))
                 {
-                    if (!log.Message.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) &&
-                        !log.Category.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) &&
-                        !log.SceneName.Contains(searchText, System.StringComparison.OrdinalIgnoreCase))
+                    if (!log.Message.Contains(searchText, StringComparison.OrdinalIgnoreCase) &&
+                        !log.Category.Contains(searchText, StringComparison.OrdinalIgnoreCase) &&
+                        !log.SceneName.Contains(searchText, StringComparison.OrdinalIgnoreCase))
                         return false;
                 }
 
@@ -385,13 +387,13 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
         private void ExportLogs()
         {
             string exportPath = EditorUtility.SaveFilePanel("导出日志", Application.dataPath,
-                $"Logs_{System.DateTime.Now:yyyyMMdd_HHmmss}", "txt");
+                $"Logs_{DateTime.Now:yyyyMMdd_HHmmss}", "txt");
 
             if (!string.IsNullOrEmpty(exportPath))
             {
                 using (var writer = new System.IO.StreamWriter(exportPath))
                 {
-                    writer.WriteLine($"日志导出时间: {System.DateTime.Now}");
+                    writer.WriteLine($"日志导出时间: {DateTime.Now}");
                     writer.WriteLine($"总日志数: {totalLogsReceived}");
                     writer.WriteLine($"过滤后: {filteredLogs.Count}");
                     writer.WriteLine("=================================");

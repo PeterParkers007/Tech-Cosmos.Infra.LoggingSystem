@@ -7,6 +7,7 @@ using TechCosmos.LoggingSystem.Runtime.OutPut;
 using TechCosmos.LoggingSystem.Runtime.Interface;
 using TechCosmos.LoggingSystem.Runtime.Enum;
 using TechCosmos.LoggingSystem.Runtime.Struct;
+
 namespace TechCosmos.LoggingSystem.Runtime
 {
     public class LoggingManager : MonoBehaviour
@@ -19,6 +20,9 @@ namespace TechCosmos.LoggingSystem.Runtime
 
         public static LoggingManager Instance { get; private set; }
 
+        // 新增：实时日志事件
+        public static event Action<LogEntry> OnLogReceived;
+
         private void Awake()
         {
             if (Instance == null)
@@ -26,6 +30,8 @@ namespace TechCosmos.LoggingSystem.Runtime
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
                 InitializeOutputters();
+                // 记录日志系统启动
+                LogInternal("日志系统启动", LogLevel.Info, "Logging");
             }
             else
             {
@@ -69,9 +75,33 @@ namespace TechCosmos.LoggingSystem.Runtime
                 ObjectName = gameObject.name
             };
 
+            ProcessLogEntry(entry);
+        }
+
+        // 新增：内部日志方法（不过滤）
+        private void LogInternal(string message, LogLevel level, string category)
+        {
+            var entry = new LogEntry
+            {
+                Message = message,
+                Level = level,
+                Category = category,
+                Timestamp = DateTime.Now,
+                SceneName = SceneManager.GetActiveScene().name,
+                ObjectName = "LoggingSystem"
+            };
+
+            ProcessLogEntry(entry);
+        }
+
+        // 新增：处理日志条目（包含实时推送）
+        private void ProcessLogEntry(LogEntry entry)
+        {
             logQueue.Enqueue(entry);
 
-            // 立即处理或批量处理
+            // 触发实时日志事件
+            OnLogReceived?.Invoke(entry);
+
             ProcessLogQueue();
         }
 
@@ -87,12 +117,31 @@ namespace TechCosmos.LoggingSystem.Runtime
             }
         }
 
-        // 便捷方法
+        // 便捷方法 - 修复：调用公共Log方法
         public void Trace(string message, string category = "General") => Log(message, LogLevel.Trace, category);
         public void Debug(string message, string category = "General") => Log(message, LogLevel.Debug, category);
         public void Info(string message, string category = "General") => Log(message, LogLevel.Info, category);
         public void Warn(string message, string category = "General") => Log(message, LogLevel.Warning, category);
         public void Error(string message, string category = "General") => Log(message, LogLevel.Error, category);
         public void Critical(string message, string category = "General") => Log(message, LogLevel.Critical, category);
+
+        // 新增：性能标记方法
+        [System.Diagnostics.Conditional("ENABLE_PERFORMANCE_LOGGING")]
+        public static void MarkPerformance(string marker, float timeMs, string category = "Performance")
+        {
+            if (Instance != null && timeMs > 16.7f) // 超过一帧时间
+            {
+                Instance.Warn($"性能警告: {marker} 耗时 {timeMs:F1}ms", category);
+            }
+        }
+
+        // 新增：行为记录方法
+        public static void LogBehavior(string behavior, string details = "", string playerId = "")
+        {
+            if (Instance != null)
+            {
+                Instance.Info($"BEHAVIOR: {behavior} - {details}", "Behavior");
+            }
+        }
     }
 }

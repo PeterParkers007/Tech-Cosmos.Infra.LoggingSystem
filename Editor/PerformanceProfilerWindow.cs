@@ -26,7 +26,7 @@ namespace TechCosmos.LoggingSystem.Editor.Tools
         private float profileDuration = 60f; // 采样60秒
         private float elapsedTime = 0f;
 
-        [MenuItem("Tech-Cosmos/LoggingSystem/性能热点分析")]
+        [MenuItem("Tech-Cosmos/性能热点分析")]
         public static void ShowWindow()
         {
             GetWindow<PerformanceProfilerWindow>("性能分析");
